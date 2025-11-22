@@ -6,8 +6,7 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   Platform, 
-  ScrollView,
-  SafeAreaView 
+  ScrollView
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -25,7 +24,7 @@ import {
   collection, query, onSnapshot 
 } from 'firebase/firestore';
 
-// Configuración de Firebase
+// Configuración directa
 const firebaseConfig = {
     apiKey: "AIzaSyDyvGTl21W5eQu1GUfre9MGiE23Gm_S8m0",
     authDomain: "lavanderiaelcobre-4212b.firebaseapp.com",
@@ -35,7 +34,7 @@ const firebaseConfig = {
     appId: "1:250289358691:web:05d026af7a59ecb98f3556",
 };
 
-// Inicializar Firebase solo si no existe
+// Inicializar solo si no existe
 if (getApps().length === 0) {
   initializeApp(firebaseConfig);
 }
@@ -55,7 +54,7 @@ const AuthContext = createContext(undefined);
 
 function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Carga inicial de Firebase
 
     const fetchAndSetUser = async (uid, email, displayName) => {
         if (!uid) return false;
@@ -90,27 +89,26 @@ function AuthProvider({ children }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                // Si Firebase ya tiene usuario, validamos roles
                 if (!user || user.uid !== firebaseUser.uid) {
                     await fetchAndSetUser(firebaseUser.uid, firebaseUser.email || '', firebaseUser.displayName || '');
                 }
             } else {
                 setUser(null);
             }
-            setLoading(false);
+            setLoading(false); // Terminó la carga inicial de Auth
         });
         return unsubscribe;
     }, []);
 
     const loginWithToken = async (token) => {
       if (!token) return false;
-      setLoading(true);
+      // No ponemos setLoading(true) global aquí para no bloquear UI si ya había usuario
       try {
-          // Simulación: En producción usarías un Custom Token. Aquí usamos el UID directo.
+          // Simulación: Login con UID directo
           const success = await fetchAndSetUser(token, 'usuario@intranet.cl', 'Usuario Intranet');
-          setLoading(false);
           return success;
       } catch (error) {
-          setLoading(false);
           return false;
       }
     };
@@ -130,162 +128,129 @@ function AuthProvider({ children }) {
 
 const useAuth = () => useContext(AuthContext);
 
-// --- 3. COMPONENTES VISUALES (Estilo Naranjo) ---
-
-// Pantalla de Carga estilo "Naranjo" (Traducida a React Native Styles)
-const LoadingScreen = ({ mensaje = "Validando credenciales...", esError = false }) => (
-    <View style={styles.loadingBackground}>
-        <View style={styles.loadingContent}>
-            {esError ? (
-                <Text style={{ fontSize: 50 }}>⚠️</Text>
-            ) : (
-                <ActivityIndicator size="large" color="#f97316" style={{ transform: [{ scale: 1.5 }] }} />
-            )}
-            
-            <Text style={[styles.loadingText, esError && styles.errorText]}>
-                {mensaje}
-            </Text>
-        </View>
-    </View>
-);
+// --- 3. PANTALLAS ---
 
 const DashboardScreen = ({ navigation }) => {
     const { user, signOut } = useAuth();
-    
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Lavandería El Cobre</Text>
-                    <Text style={styles.headerSubtitle}>Bienvenido, {user?.displayName}</Text>
-                </View>
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Dashboard</Text>
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Bienvenido, {user?.displayName}</Text>
+                <Text style={styles.cardText}>Rol: {user?.role.toUpperCase()}</Text>
+            </View>
 
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Panel de Control</Text>
-                    <Text style={styles.cardText}>Rol actual: {user?.role.toUpperCase()}</Text>
-                </View>
-
-                <View style={styles.grid}>
-                    <TouchableOpacity 
-                        style={styles.gridItem} 
-                        onPress={() => navigation.navigate('Inventario')}
-                    >
-                        <Text style={styles.gridIcon}>📦</Text>
-                        <Text style={styles.gridText}>Inventario</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                        style={styles.gridItem} 
-                        onPress={() => alert('Funcionalidad en desarrollo')}
-                    >
-                        <Text style={styles.gridIcon}>📝</Text>
-                        <Text style={styles.gridText}>Consumo</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-                    <Text style={styles.logoutText}>Cerrar Sesión</Text>
+            <View style={styles.menuGrid}>
+                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Inventario')}>
+                    <Text style={styles.menuText}>📦 Inventario</Text>
                 </TouchableOpacity>
-            </ScrollView>
-        </SafeAreaView>
+                {user?.role === 'admin' && (
+                    <TouchableOpacity style={[styles.menuItem, styles.adminItem]} onPress={() => alert('Admin')}>
+                        <Text style={styles.menuText}>⚙️ Admin</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+                <Text style={styles.logoutText}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+        </ScrollView>
     );
 };
 
 const InventarioScreen = () => {
     const [items, setItems] = useState([]);
-    const [loadingInv, setLoadingInv] = useState(true);
     
     useEffect(() => {
         const q = query(collection(db, COLLECTIONS.inventario));
         const unsub = onSnapshot(q, (snap) => {
             setItems(snap.docs.map(d => ({id: d.id, ...d.data()})));
-            setLoadingInv(false);
         });
         return unsub;
     }, []);
 
-    if (loadingInv) return <View style={styles.center}><ActivityIndicator color="#e85d2e" /></View>;
-
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>Inventario Actual</Text>
-                {items.map(item => (
-                    <View key={item.id} style={styles.card}>
-                        <Text style={styles.itemTitle}>{item.nombre}</Text>
-                        <View style={styles.divider} />
-                        {item.unidades?.map((u, i) => (
-                            <View key={i} style={styles.row}>
-                                <Text style={styles.itemText}>{u.unidad}</Text>
-                                <Text style={[styles.itemText, { fontWeight: 'bold', color: '#e85d2e' }]}>
-                                    {u.stock}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                ))}
-            </ScrollView>
-        </SafeAreaView>
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Inventario</Text>
+            {items.map(item => (
+                <View key={item.id} style={styles.card}>
+                    <Text style={styles.itemTitle}>{item.nombre}</Text>
+                    {item.unidades?.map((u, i) => (
+                        <Text key={i} style={styles.itemText}>• {u.stock} {u.unidad}</Text>
+                    ))}
+                </View>
+            ))}
+        </ScrollView>
     );
 };
 
-// --- 4. NAVEGACIÓN ---
+// --- 4. LÓGICA DE NAVEGACIÓN ---
 
 const Stack = createNativeStackNavigator();
 
-function MainNavigation() {
+function Navigation() {
     const { user, loading, loginWithToken } = useAuth();
-    const [verifyingUrl, setVerifyingUrl] = useState(true);
+    // Estado local para controlar si estamos verificando la URL
+    const [isCheckingUrl, setIsCheckingUrl] = useState(true);
 
     useEffect(() => {
-        const checkUrl = async () => {
+        const checkUrlToken = async () => {
             if (Platform.OS === 'web') {
                 try {
-                    const initialUrl = await Linking.getInitialURL();
-                    if (initialUrl) {
-                        // Parsear la URL para buscar ?auth_token=...
-                        const { queryParams } = Linking.parse(initialUrl);
+                    const url = await Linking.getInitialURL();
+                    if (url) {
+                        const { queryParams } = Linking.parse(url);
                         const token = queryParams?.auth_token;
 
                         if (token) {
+                            // Si hay token, intentamos loguear. 
+                            // Mientras tanto mostramos carga solo si no hay usuario previo.
                             const success = await loginWithToken(token);
                             if (!success) {
-                                // Token inválido
                                 window.location.href = MAIN_INTRANET_URL;
                                 return;
                             }
                         } else if (!user && !loading) {
-                            // Sin token y sin sesión previa
+                            // Sin token y sin usuario -> Redirigir
                             window.location.href = MAIN_INTRANET_URL;
                             return;
                         }
                     } else if (!user && !loading) {
-                        window.location.href = MAIN_INTRANET_URL;
-                        return;
+                         window.location.href = MAIN_INTRANET_URL;
+                         return;
                     }
                 } catch (e) {
-                    console.error("Error link", e);
+                    console.error("Error URL", e);
+                    if (!user) window.location.href = MAIN_INTRANET_URL;
                 }
             }
-            setVerifyingUrl(false);
+            setIsCheckingUrl(false); // Terminamos de chequear URL
         };
 
         if (!loading) {
-            checkUrl();
+            checkUrlToken();
         }
     }, [loading, user]);
 
-    if (loading || verifyingUrl) {
-        return <LoadingScreen />;
+    // PANTALLA DE CARGA (Solo se muestra si estamos cargando Auth o Chequeando URL)
+    // Si ya hay usuario, esto se salta rápido o no se muestra si el chequeo es veloz.
+    if (loading || isCheckingUrl) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#e85d2e" />
+                {/* Opcional: Texto pequeño si demora mucho */}
+                {/* <Text style={styles.loadingText}>Cargando...</Text> */}
+            </View>
+        );
     }
 
-    if (!user) return null; // Redirección en proceso
+    if (!user) return null; // Se redirigirá en breve
 
     return (
-        <Stack.Navigator screenOptions={{
+        <Stack.Navigator screenOptions={{ 
             headerStyle: { backgroundColor: '#e85d2e' },
             headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' },
+            headerTitleStyle: { fontWeight: 'bold' }
         }}>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Inventario" component={InventarioScreen} />
@@ -297,150 +262,94 @@ export default function App() {
     return (
         <NavigationContainer>
             <AuthProvider>
-                <MainNavigation />
+                <Navigation />
             </AuthProvider>
         </NavigationContainer>
     );
 }
 
-// --- 5. ESTILOS NATIVOS (Traducción de tu CSS) ---
+// --- ESTILOS ---
 const styles = StyleSheet.create({
-    // Estilo Naranjo de Carga
-    loadingBackground: {
+    loadingContainer: {
         flex: 1,
-        backgroundColor: '#ffedd5', // orange-100
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    loadingContent: {
-        alignItems: 'center',
-        padding: 20,
-    },
-    loadingText: {
-        marginTop: 20,
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#ea580c', // orange-600
-    },
-    errorText: {
-        color: '#dc2626', // red-600
-    },
-    
-    // Estilos Generales
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#fff', // Fondo blanco limpio
     },
     container: {
         padding: 20,
-        paddingBottom: 40,
+        backgroundColor: '#fff',
+        flexGrow: 1,
     },
-    center: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    header: {
-        marginBottom: 25,
-        borderBottomWidth: 4,
-        borderBottomColor: '#e85d2e',
-        paddingBottom: 10,
-    },
-    headerTitle: {
+    title: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#e85d2e',
-        textAlign: 'center',
-    },
-    headerSubtitle: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        marginTop: 5,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 15,
+        marginBottom: 20,
     },
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: '#fff5ee',
+        padding: 20,
         borderRadius: 12,
-        padding: 15,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#fed7aa', // orange-200
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        borderColor: '#ffccbc',
     },
     cardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#c2410c', // orange-700
+        color: '#d84315',
         marginBottom: 5,
     },
     cardText: {
         fontSize: 16,
-        color: '#444',
+        color: '#555',
     },
-    grid: {
+    menuGrid: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         flexWrap: 'wrap',
+        justifyContent: 'space-between',
         marginTop: 10,
     },
-    gridItem: {
+    menuItem: {
         width: '48%',
-        backgroundColor: '#fff7ed', // orange-50
+        backgroundColor: '#f5f5f5',
         padding: 20,
-        borderRadius: 12,
-        alignItems: 'center',
+        borderRadius: 10,
         marginBottom: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    adminItem: {
+        backgroundColor: '#fff3e0',
         borderWidth: 1,
-        borderColor: '#ffcc80',
+        borderColor: '#e85d2e',
     },
-    gridIcon: {
-        fontSize: 30,
-        marginBottom: 10,
-    },
-    gridText: {
+    menuText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#ea580c',
-    },
-    itemTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
         color: '#333',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: '#eee',
-        marginVertical: 8,
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-    },
-    itemText: {
-        fontSize: 16,
-        color: '#555',
     },
     logoutButton: {
         marginTop: 30,
-        backgroundColor: '#ef4444',
+        backgroundColor: '#d32f2f',
         padding: 15,
-        borderRadius: 10,
+        borderRadius: 8,
         alignItems: 'center',
     },
     logoutText: {
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    itemTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    itemText: {
+        fontSize: 15,
+        color: '#666',
+        marginTop: 5,
     }
 });
