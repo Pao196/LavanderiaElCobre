@@ -27,7 +27,6 @@ export default function AlertasPantalla({ navigation }) {
         ...doc.data(),
       }));
 
-
       const unidadesBajas = [];
 
       lista.forEach(item => {
@@ -36,7 +35,8 @@ export default function AlertasPantalla({ navigation }) {
             const stock = Number(u.stock || 0);
             const minimo = Number(u.minimo || 2);
 
-            if (stock <= minimo + 13) { 
+            // Determinar si es alerta
+            if (stock <= minimo + 13) {
               unidadesBajas.push({
                 nombre: item.nombre,
                 stock,
@@ -58,9 +58,9 @@ export default function AlertasPantalla({ navigation }) {
   const obtenerColor = (stock) => {
     const s = Number(stock);
 
-    if (s > 50) return '#4caf50';   
-    if (s > 15) return '#ffb84d';   
-    return '#ff4d4d';               
+    if (s > 50) return '#4caf50';
+    if (s > 15) return '#ffb84d';
+    return '#ff4d4d';
   };
 
   if (cargando) {
@@ -89,32 +89,33 @@ export default function AlertasPantalla({ navigation }) {
               const color = obtenerColor(item.stock);
 
               return (
-                <View style={[styles.item, { borderLeftColor: color }]}>
-                  <View style={styles.itemInfo}>
+                <View style={styles.alertaBox}>
 
-                    <Text style={styles.itemNombre}>{item.nombre}</Text>
+                  {/* TÍTULO DE LA ALERTA (NOMBRE DEL INSUMO) */}
+                  <Text style={styles.alertaTitulo}>{item.nombre}</Text>
 
-                    <Text style={styles.itemCantidad}>
+                  {/* TARJETA INTERNA IGUAL A INVENTARIO */}
+                  <View style={[styles.alertaCard, { borderLeftColor: color }]}>
+
+                    <Text style={styles.alertaDetalle}>
                       Stock:{' '}
                       <Text style={{ color, fontWeight: 'bold' }}>
                         {item.stock}
                       </Text>
                     </Text>
 
-                    <Text style={styles.itemCantidad}>
+                    <Text style={styles.alertaDetalle}>
                       Unidad:{' '}
                       <Text style={{ fontWeight: 'bold' }}>
                         {item.unidad}
                       </Text>
                     </Text>
 
-                    <Text style={styles.itemMinimo}>
+                    <Text style={styles.alertaDetalleMin}>
                       (Mínimo: {item.minimo})
                     </Text>
 
                   </View>
-
-                  <View style={[styles.indicador, { backgroundColor: color }]} />
                 </View>
               );
             }}
@@ -128,6 +129,7 @@ export default function AlertasPantalla({ navigation }) {
         >
           <Text style={styles.textoBotonVolver}>Volver</Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );
