@@ -58,7 +58,7 @@ export default function InicioSesionPantalla({ navigation }) {
       }
 
 
-      if (rol === 'admin') {
+      if (rol === 'administrador') {
         Alert.alert('Bienvenido Administrador', 'Accediendo al panel de administración...');
         navigation.replace('Admin');
       } else {

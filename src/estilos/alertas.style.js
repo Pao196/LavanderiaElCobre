@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native'; 
 
 export default StyleSheet.create({
   safeArea: {
@@ -16,50 +16,45 @@ export default StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: '#e85d2e',
-    textAlign: 'center',
     marginBottom: 25,
     letterSpacing: 0.3,
   },
 
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff7ef',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#ffb97a',
-    padding: 15,
-    marginVertical: 8,
 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+  alertaBox: {
+    backgroundColor: '#fdecdc',    
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 28,
   },
 
-  itemInfo: {
-    flex: 1,
+
+  alertaCard: {
+    backgroundColor: '#fff4e8',     
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderLeftWidth: 6,
+    borderLeftColor: '#f4b183',     
   },
 
-  itemNombre: {
-    fontSize: 17,
-    fontWeight: '700',
+  alertaTitulo: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 12,
   },
 
-  itemCantidad: {
-    fontSize: 15,
+  alertaDetalle: {
+    fontSize: 16,
+    marginBottom: 4,
+    color: '#333',
+  },
+
+  alertaDetalleMin: {
+    fontSize: 14,
     color: '#666',
     marginTop: 2,
-  },
-
-  indicador: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginLeft: 12,
   },
 
   vacio: {
@@ -71,28 +66,18 @@ export default StyleSheet.create({
   },
 
   botonVolver: {
-    width: '50%',
-    alignSelf: 'center',
-    borderWidth: 1.8,
-    borderColor: '#e85d2e',
-    borderRadius: 12,
-    paddingVertical: 13,
-    marginTop: 25,
-    marginBottom: 40,
-
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: '#6c757d',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 25,
   },
 
   textoBotonVolver: {
-    textAlign: 'center',
-    color: '#e85d2e',
-    fontWeight: '700',
+    color: '#fff',
     fontSize: 16,
-    letterSpacing: 0.3,
+    fontWeight: 'bold',
   },
 
   cargando: {
