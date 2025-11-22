@@ -5,8 +5,9 @@ import {
   ActivityIndicator, 
   TouchableOpacity, 
   StyleSheet, 
-  Platform,
-  ScrollView
+  Platform, 
+  ScrollView,
+  SafeAreaView 
 } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -24,7 +25,7 @@ import {
   collection, query, onSnapshot 
 } from 'firebase/firestore';
 
-// Configuración directa
+// Configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDyvGTl21W5eQu1GUfre9MGiE23Gm_S8m0",
     authDomain: "lavanderiaelcobre-4212b.firebaseapp.com",
@@ -34,7 +35,7 @@ const firebaseConfig = {
     appId: "1:250289358691:web:05d026af7a59ecb98f3556",
 };
 
-// Inicializar solo si no existe
+// Inicializar Firebase solo si no existe
 if (getApps().length === 0) {
   initializeApp(firebaseConfig);
 }
@@ -64,6 +65,7 @@ function AuthProvider({ children }) {
             
             if (userDoc.exists()) {
                 const userData = userDoc.data();
+                // Actualizar último acceso en segundo plano
                 updateDoc(userDocRef, { ultimo_acceso: Timestamp.now() }).catch(() => {});
 
                 const rol = (userData.rol || userData.role || 'operario').toLowerCase();
@@ -103,7 +105,7 @@ function AuthProvider({ children }) {
       if (!token) return false;
       setLoading(true);
       try {
-          // Simulación: Login con UID directo
+          // Simulación: En producción usarías un Custom Token. Aquí usamos el UID directo.
           const success = await fetchAndSetUser(token, 'usuario@intranet.cl', 'Usuario Intranet');
           setLoading(false);
           return success;
@@ -128,132 +130,162 @@ function AuthProvider({ children }) {
 
 const useAuth = () => useContext(AuthContext);
 
-// --- 3. COMPONENTES DE PANTALLA (Usando React Native) ---
+// --- 3. COMPONENTES VISUALES (Estilo Naranjo) ---
 
-const LoadingScreen = () => (
-    <View style={styles.loadingContainer}>
-        <View style={styles.spinnerContainer}>
-            <ActivityIndicator size="large" color="#e85d2e" />
+// Pantalla de Carga estilo "Naranjo" (Traducida a React Native Styles)
+const LoadingScreen = ({ mensaje = "Validando credenciales...", esError = false }) => (
+    <View style={styles.loadingBackground}>
+        <View style={styles.loadingContent}>
+            {esError ? (
+                <Text style={{ fontSize: 50 }}>⚠️</Text>
+            ) : (
+                <ActivityIndicator size="large" color="#f97316" style={{ transform: [{ scale: 1.5 }] }} />
+            )}
+            
+            <Text style={[styles.loadingText, esError && styles.errorText]}>
+                {mensaje}
+            </Text>
         </View>
-        <Text style={styles.loadingText}>Validando credenciales...</Text>
     </View>
 );
 
 const DashboardScreen = ({ navigation }) => {
     const { user, signOut } = useAuth();
+    
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Dashboard</Text>
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Bienvenido, {user?.displayName}</Text>
-                <Text style={styles.cardText}>Rol: {user?.role.toUpperCase()}</Text>
-            </View>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Lavandería El Cobre</Text>
+                    <Text style={styles.headerSubtitle}>Bienvenido, {user?.displayName}</Text>
+                </View>
 
-            <View style={styles.menuGrid}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Inventario')}>
-                    <Text style={styles.menuText}>📦 Inventario</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.menuItem} onPress={() => alert('Próximamente')}>
-                    <Text style={styles.menuText}>📝 Consumo</Text>
-                </TouchableOpacity>
-                {user?.role === 'admin' && (
-                    <TouchableOpacity style={[styles.menuItem, styles.adminItem]} onPress={() => alert('Admin')}>
-                        <Text style={styles.menuText}>⚙️ Admin</Text>
+                <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Panel de Control</Text>
+                    <Text style={styles.cardText}>Rol actual: {user?.role.toUpperCase()}</Text>
+                </View>
+
+                <View style={styles.grid}>
+                    <TouchableOpacity 
+                        style={styles.gridItem} 
+                        onPress={() => navigation.navigate('Inventario')}
+                    >
+                        <Text style={styles.gridIcon}>📦</Text>
+                        <Text style={styles.gridText}>Inventario</Text>
                     </TouchableOpacity>
-                )}
-            </View>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                    <TouchableOpacity 
+                        style={styles.gridItem} 
+                        onPress={() => alert('Funcionalidad en desarrollo')}
+                    >
+                        <Text style={styles.gridIcon}>📝</Text>
+                        <Text style={styles.gridText}>Consumo</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+                    <Text style={styles.logoutText}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const InventarioScreen = () => {
     const [items, setItems] = useState([]);
+    const [loadingInv, setLoadingInv] = useState(true);
     
     useEffect(() => {
         const q = query(collection(db, COLLECTIONS.inventario));
         const unsub = onSnapshot(q, (snap) => {
             setItems(snap.docs.map(d => ({id: d.id, ...d.data()})));
+            setLoadingInv(false);
         });
         return unsub;
     }, []);
 
+    if (loadingInv) return <View style={styles.center}><ActivityIndicator color="#e85d2e" /></View>;
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Inventario</Text>
-            {items.map(item => (
-                <View key={item.id} style={styles.card}>
-                    <Text style={styles.itemTitle}>{item.nombre}</Text>
-                    {item.unidades?.map((u, i) => (
-                        <Text key={i} style={styles.itemText}>• {u.stock} {u.unidad}</Text>
-                    ))}
-                </View>
-            ))}
-        </ScrollView>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.title}>Inventario Actual</Text>
+                {items.map(item => (
+                    <View key={item.id} style={styles.card}>
+                        <Text style={styles.itemTitle}>{item.nombre}</Text>
+                        <View style={styles.divider} />
+                        {item.unidades?.map((u, i) => (
+                            <View key={i} style={styles.row}>
+                                <Text style={styles.itemText}>{u.unidad}</Text>
+                                <Text style={[styles.itemText, { fontWeight: 'bold', color: '#e85d2e' }]}>
+                                    {u.stock}
+                                </Text>
+                            </View>
+                        ))}
+                    </View>
+                ))}
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
-// --- 4. LÓGICA DE NAVEGACIÓN Y CONTROL DE ACCESO ---
+// --- 4. NAVEGACIÓN ---
 
 const Stack = createNativeStackNavigator();
 
-function Navigation() {
+function MainNavigation() {
     const { user, loading, loginWithToken } = useAuth();
-    const [isCheckingUrl, setIsCheckingUrl] = useState(true);
+    const [verifyingUrl, setVerifyingUrl] = useState(true);
 
     useEffect(() => {
-        const checkUrlToken = async () => {
+        const checkUrl = async () => {
             if (Platform.OS === 'web') {
-                // Forma segura de obtener URL en Expo Web
                 try {
-                    const url = await Linking.getInitialURL();
-                    if (url) {
-                        // Parsear manualmente si Linking.parse falla o no trae queryParams
-                        const urlObj = new URL(url);
-                        const params = new URLSearchParams(urlObj.search);
-                        const token = params.get('auth_token');
+                    const initialUrl = await Linking.getInitialURL();
+                    if (initialUrl) {
+                        // Parsear la URL para buscar ?auth_token=...
+                        const { queryParams } = Linking.parse(initialUrl);
+                        const token = queryParams?.auth_token;
 
                         if (token) {
                             const success = await loginWithToken(token);
                             if (!success) {
+                                // Token inválido
                                 window.location.href = MAIN_INTRANET_URL;
                                 return;
                             }
                         } else if (!user && !loading) {
+                            // Sin token y sin sesión previa
                             window.location.href = MAIN_INTRANET_URL;
                             return;
                         }
                     } else if (!user && !loading) {
-                         window.location.href = MAIN_INTRANET_URL;
-                         return;
+                        window.location.href = MAIN_INTRANET_URL;
+                        return;
                     }
                 } catch (e) {
-                    console.error("Error parsing URL", e);
-                    if (!user) window.location.href = MAIN_INTRANET_URL;
+                    console.error("Error link", e);
                 }
             }
-            setIsCheckingUrl(false);
+            setVerifyingUrl(false);
         };
 
         if (!loading) {
-            checkUrlToken();
+            checkUrl();
         }
     }, [loading, user]);
 
-    if (loading || isCheckingUrl) {
+    if (loading || verifyingUrl) {
         return <LoadingScreen />;
     }
 
-    if (!user) return null; 
+    if (!user) return null; // Redirección en proceso
 
     return (
-        <Stack.Navigator screenOptions={{ 
+        <Stack.Navigator screenOptions={{
             headerStyle: { backgroundColor: '#e85d2e' },
             headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' }
+            headerTitleStyle: { fontWeight: 'bold' },
         }}>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Inventario" component={InventarioScreen} />
@@ -265,102 +297,150 @@ export default function App() {
     return (
         <NavigationContainer>
             <AuthProvider>
-                <Navigation />
+                <MainNavigation />
             </AuthProvider>
         </NavigationContainer>
     );
 }
 
-// --- ESTILOS ---
+// --- 5. ESTILOS NATIVOS (Traducción de tu CSS) ---
 const styles = StyleSheet.create({
-    loadingContainer: {
+    // Estilo Naranjo de Carga
+    loadingBackground: {
         flex: 1,
+        backgroundColor: '#ffedd5', // orange-100
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#fff5ee', 
     },
-    spinnerContainer: {
-        marginBottom: 20,
+    loadingContent: {
+        alignItems: 'center',
+        padding: 20,
     },
     loadingText: {
-        fontSize: 18,
+        marginTop: 20,
+        fontSize: 20,
         fontWeight: '600',
-        color: '#e85d2e', 
+        color: '#ea580c', // orange-600
+    },
+    errorText: {
+        color: '#dc2626', // red-600
+    },
+    
+    // Estilos Generales
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#fff',
     },
     container: {
         padding: 20,
-        backgroundColor: '#fff',
-        flexGrow: 1,
+        paddingBottom: 40,
     },
-    title: {
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    header: {
+        marginBottom: 25,
+        borderBottomWidth: 4,
+        borderBottomColor: '#e85d2e',
+        paddingBottom: 10,
+    },
+    headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#e85d2e',
-        marginBottom: 20,
+        textAlign: 'center',
+    },
+    headerSubtitle: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginTop: 5,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
     },
     card: {
-        backgroundColor: '#fff5ee',
-        padding: 20,
+        backgroundColor: '#fff',
         borderRadius: 12,
+        padding: 15,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#ffccbc',
+        borderColor: '#fed7aa', // orange-200
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     cardTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#d84315',
+        color: '#c2410c', // orange-700
         marginBottom: 5,
     },
     cardText: {
         fontSize: 16,
-        color: '#555',
+        color: '#444',
     },
-    menuGrid: {
+    grid: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
         marginTop: 10,
     },
-    menuItem: {
+    gridItem: {
         width: '48%',
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#fff7ed', // orange-50
         padding: 20,
-        borderRadius: 10,
-        marginBottom: 15,
+        borderRadius: 12,
         alignItems: 'center',
-        justifyContent: 'center',
-    },
-    adminItem: {
-        backgroundColor: '#fff3e0',
+        marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#e85d2e',
+        borderColor: '#ffcc80',
     },
-    menuText: {
+    gridIcon: {
+        fontSize: 30,
+        marginBottom: 10,
+    },
+    gridText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
-    },
-    logoutButton: {
-        marginTop: 30,
-        backgroundColor: '#d32f2f',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    logoutText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
+        color: '#ea580c',
     },
     itemTitle: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
     },
+    divider: {
+        height: 1,
+        backgroundColor: '#eee',
+        marginVertical: 8,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
     itemText: {
-        fontSize: 15,
-        color: '#666',
-        marginTop: 5,
+        fontSize: 16,
+        color: '#555',
+    },
+    logoutButton: {
+        marginTop: 30,
+        backgroundColor: '#ef4444',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    logoutText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
     }
 });
