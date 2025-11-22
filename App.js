@@ -1,354 +1,106 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Platform, 
-  ScrollView
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, Text, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
+import { StatusBar } from 'expo-status-bar';
 
-// --- 1. CONFIGURACIÓN DE FIREBASE ---
-import { initializeApp, getApps } from 'firebase/app';
-import { 
-  getAuth, 
-  signOut as firebaseSignOut, 
-  onAuthStateChanged 
-} from 'firebase/auth';
-import { 
-  getFirestore, doc, getDoc, updateDoc, Timestamp, 
-  collection, query, onSnapshot 
-} from 'firebase/firestore';
+// Importamos la navegación completa
+import NavegacionApp from './src/navegacion/NavegacionApp';
 
-// Configuración directa
-const firebaseConfig = {
-    apiKey: "AIzaSyDyvGTl21W5eQu1GUfre9MGiE23Gm_S8m0",
-    authDomain: "lavanderiaelcobre-4212b.firebaseapp.com",
-    projectId: "lavanderiaelcobre-4212b",
-    storageBucket: "lavanderiaelcobre-4212b.firebasestorage.app",
-    messagingSenderId: "250289358691",
-    appId: "1:250289358691:web:05d026af7a59ecb98f3556",
-};
+// Firebase
+import { db } from './src/servicios/firebase.js'; // Asegúrate de que este path sea correcto
+import { doc, getDoc } from 'firebase/firestore';
 
-// Inicializar solo si no existe
-if (getApps().length === 0) {
-  initializeApp(firebaseConfig);
-}
+const DASHBOARD_REDIRECT_URL = "https://lavanderia-el-cobre.vercel.app/";
 
-const auth = getAuth();
-const db = getFirestore();
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [rutaInicial, setRutaInicial] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
-const COLLECTIONS = {
-    users: 'usuarios',
-    inventario: 'inventario_gestion_7',
-};
-
-// URL de la Intranet para redirección al cerrar sesión
-const INTRANET_URL = "https://lavanderia-el-cobre.vercel.app/"; 
-const DASHBOARD_REDIRECT_URL = "https://lavanderia-cobre-landingpage.vercel.app/intranet/dashboard";
-
-// --- 2. CONTEXTO DE AUTENTICACIÓN ---
-const AuthContext = createContext(undefined);
-
-function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    const fetchAndSetUser = async (uid, email, displayName) => {
-        if (!uid) return false;
-        try {
-            const userDocRef = doc(db, COLLECTIONS.users, uid);
-            const userDoc = await getDoc(userDocRef);
-            
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                updateDoc(userDocRef, { ultimo_acceso: Timestamp.now() }).catch(() => {});
-
-                const rol = (userData.rol || userData.role || 'operario').toLowerCase();
-                let mappedRole = 'operario';
-                if (rol === 'administrador' || rol === 'admin') mappedRole = 'admin';
-
-                const newUser = {
-                    uid: uid,
-                    email: userData.correo || userData.email || email,
-                    displayName: userData.nombre || userData.displayName || displayName,
-                    role: mappedRole
-                };
-                setUser(newUser);
-                return true;
-            }
-        } catch (error) { 
-            console.error("Error fetching user:", error); 
-        }
-        return false;
-    };
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                if (!user || user.uid !== firebaseUser.uid) {
-                    await fetchAndSetUser(firebaseUser.uid, firebaseUser.email || '', firebaseUser.displayName || '');
-                }
-            } else {
-                setUser(null);
-            }
-            setLoading(false);
-        });
-        return unsubscribe;
-    }, []);
-
-    const loginWithToken = async (token) => {
-      if (!token) return false;
+  useEffect(() => {
+    const validarSesion = async () => {
       try {
-          const success = await fetchAndSetUser(token, 'usuario@intranet.cl', 'Usuario Intranet');
-          return success;
-      } catch (error) {
-          return false;
+        // 1. Obtener URL y Token
+        let url = await Linking.getInitialURL();
+        let token = null;
+
+        if (url) {
+          const { queryParams } = Linking.parse(url);
+          token = queryParams?.auth_token;
+        }
+
+        // Modo Desarrollo (Opcional): Si no hay token, forzar uno para probar (comentar en producción)
+        // if (!token) token = "TU_UID_DE_PRUEBA"; 
+
+        if (!token) {
+          manejarFallo("No se detectó token de sesión.");
+          return;
+        }
+
+        // 2. Buscar usuario en Firestore usando el token como ID
+        const userRef = doc(db, 'usuarios', token);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const rol = (data.rol || 'operario').toLowerCase();
+
+          // 3. Definir ruta inicial según rol
+          if (rol === 'administrador' || rol === 'admin') {
+            setRutaInicial('Admin');
+          } else {
+            setRutaInicial('Inicio');
+          }
+          setLoading(false);
+        } else {
+          manejarFallo("Usuario no encontrado en la base de datos.");
+        }
+
+      } catch (e) {
+        console.error(e);
+        manejarFallo("Error de conexión.");
       }
     };
 
-    const signOut = async () => {
-        await firebaseSignOut(auth);
-        setUser(null);
-        // Redirección a la Intranet principal al cerrar sesión
-        if (Platform.OS === 'web') {
-            window.location.href = INTRANET_URL;
-        }
-    };
-    
-    const value = useMemo(() => ({ user, loading, signOut, loginWithToken }), [user, loading]);
+    validarSesion();
+  }, []);
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-const useAuth = () => useContext(AuthContext);
-
-// --- 3. COMPONENTES DE PANTALLA ---
-
-const LoadingScreen = () => (
-    <View style={styles.loadingContainer}>
-        <View style={styles.spinnerContainer}>
-            <ActivityIndicator size="large" color="#e85d2e" />
-        </View>
-        <Text style={styles.loadingText}>Validando credenciales...</Text>
-    </View>
-);
-
-const DashboardScreen = ({ navigation }) => {
-    const { user, signOut } = useAuth();
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Dashboard</Text>
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Bienvenido, {user?.displayName}</Text>
-                <Text style={styles.cardText}>Rol: {user?.role.toUpperCase()}</Text>
-            </View>
-
-            <View style={styles.menuGrid}>
-                <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Inventario')}>
-                    <Text style={styles.menuText}>📦 Inventario</Text>
-                </TouchableOpacity>
-                {user?.role === 'admin' && (
-                    <TouchableOpacity style={[styles.menuItem, styles.adminItem]} onPress={() => alert('Admin')}>
-                        <Text style={styles.menuText}>⚙️ Admin</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-            </TouchableOpacity>
-        </ScrollView>
-    );
-};
-
-const InventarioScreen = () => {
-    const [items, setItems] = useState([]);
-    
-    useEffect(() => {
-        const q = query(collection(db, COLLECTIONS.inventario));
-        const unsub = onSnapshot(q, (snap) => {
-            setItems(snap.docs.map(d => ({id: d.id, ...d.data()})));
-        });
-        return unsub;
-    }, []);
-
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Inventario</Text>
-            {items.map(item => (
-                <View key={item.id} style={styles.card}>
-                    <Text style={styles.itemTitle}>{item.nombre}</Text>
-                    {item.unidades?.map((u, i) => (
-                        <Text key={i} style={styles.itemText}>• {u.stock} {u.unidad}</Text>
-                    ))}
-                </View>
-            ))}
-        </ScrollView>
-    );
-};
-
-// --- 4. NAVEGACIÓN ---
-
-const Stack = createNativeStackNavigator();
-
-function Navigation() {
-    const { user, loading, loginWithToken } = useAuth();
-    const [isCheckingUrl, setIsCheckingUrl] = useState(true);
-
-    useEffect(() => {
-        const checkUrlToken = async () => {
-            if (Platform.OS === 'web') {
-                try {
-                    const url = await Linking.getInitialURL();
-                    if (url) {
-                        const { queryParams } = Linking.parse(url);
-                        const token = queryParams?.auth_token;
-
-                        if (token) {
-                            const success = await loginWithToken(token);
-                            if (!success) {
-                                window.location.href = DASHBOARD_REDIRECT_URL;
-                                return;
-                            }
-                        } else if (!user && !loading) {
-                            window.location.href = DASHBOARD_REDIRECT_URL;
-                            return;
-                        }
-                    } else if (!user && !loading) {
-                         window.location.href = DASHBOARD_REDIRECT_URL;
-                         return;
-                    }
-                } catch (e) {
-                    console.error("Error URL", e);
-                    if (!user) window.location.href = DASHBOARD_REDIRECT_URL;
-                }
-            }
-            setIsCheckingUrl(false);
-        };
-
-        if (!loading) {
-            checkUrlToken();
-        }
-    }, [loading, user]);
-
-    if (loading || isCheckingUrl) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#e85d2e" />
-            </View>
-        );
+  const manejarFallo = (mensaje) => {
+    if (Platform.OS === 'web') {
+      // Si falla, devolver a la intranet
+      window.location.href = DASHBOARD_REDIRECT_URL;
+    } else {
+      setErrorMsg(mensaje);
+      setLoading(false);
     }
+  };
 
-    if (!user) return null; 
-
+  if (loading) {
     return (
-        <Stack.Navigator screenOptions={{ 
-            headerStyle: { backgroundColor: '#e85d2e' },
-            headerTintColor: '#fff',
-            headerTitleStyle: { fontWeight: 'bold' }
-        }}>
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="Inventario" component={InventarioScreen} />
-        </Stack.Navigator>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="#e85d2e" />
+        <Text style={{ marginTop: 10, color: '#e85d2e' }}>Validando credenciales...</Text>
+      </View>
     );
-}
+  }
 
-export default function App() {
+  if (errorMsg) {
     return (
-        <NavigationContainer>
-            <AuthProvider>
-                <Navigation />
-            </AuthProvider>
-        </NavigationContainer>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ fontSize: 18, color: 'red', textAlign: 'center', marginBottom: 20 }}>
+          {errorMsg}
+        </Text>
+        <Text style={{ color: '#555' }}>Por favor ingresa desde la Intranet.</Text>
+      </View>
     );
-}
+  }
 
-const styles = StyleSheet.create({
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-    },
-    container: {
-        padding: 20,
-        backgroundColor: '#fff',
-        flexGrow: 1,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#e85d2e',
-        marginBottom: 20,
-    },
-    card: {
-        backgroundColor: '#fff5ee',
-        padding: 20,
-        borderRadius: 12,
-        marginBottom: 15,
-        borderWidth: 1,
-        borderColor: '#ffccbc',
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#d84315',
-        marginBottom: 5,
-    },
-    cardText: {
-        fontSize: 16,
-        color: '#555',
-    },
-    menuGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginTop: 10,
-    },
-    menuItem: {
-        width: '48%',
-        backgroundColor: '#f5f5f5',
-        padding: 20,
-        borderRadius: 10,
-        marginBottom: 15,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    adminItem: {
-        backgroundColor: '#fff3e0',
-        borderWidth: 1,
-        borderColor: '#e85d2e',
-    },
-    menuText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
-    },
-    logoutButton: {
-        marginTop: 30,
-        backgroundColor: '#d32f2f',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    logoutText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
-    itemTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    itemText: {
-        fontSize: 15,
-        color: '#666',
-        marginTop: 5,
-    }
-});
+  return (
+    <NavigationContainer>
+      <StatusBar style="light" backgroundColor="#e85d2e" />
+      {/* Pasamos la ruta calculada al navegador */}
+      <NavegacionApp rutaInicial={rutaInicial} />
+    </NavigationContainer>
+  );
+}

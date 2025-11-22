@@ -1,13 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import InicioSesionPantalla from '../pantallas/Auth/InicioSesionPantalla';
-import RegistroPantalla from '../pantallas/Auth/RegistroPantalla';
-
+// PANTALLAS OPERARIO
 import AlertasPantalla from '../pantallas/Operario/AlertasPantalla';
 import InicioPantalla from '../pantallas/Operario/InicioPantalla';
 import InventarioPantalla from '../pantallas/Operario/InventarioPantalla';
 import RegistroConsumoPantalla from '../pantallas/Operario/RegistroConsumoPantalla';
 
+// PANTALLAS ADMIN
 import AdminPantalla from '../pantallas/Admin/AdminPantalla';
 import AgregarPedidos from '../pantallas/Admin/AgregarPedidos';
 import AgregarProveedor from '../pantallas/Admin/AgregarProveedor';
@@ -23,20 +22,20 @@ import { headerOptions } from '../estilos/navegacion.style';
 
 const Stack = createNativeStackNavigator();
 
-export default function NavegacionApp() {
+// Aceptamos "rutaInicial" como prop
+export default function NavegacionApp({ rutaInicial }) {
   return (
     <Stack.Navigator
-      initialRouteName="InicioSesion"
+      initialRouteName={rutaInicial || "Inicio"} // Usamos la prop o "Inicio" por defecto
       screenOptions={headerOptions}
     >
-      <Stack.Screen name="InicioSesion" component={InicioSesionPantalla} />
-      <Stack.Screen name="Registro" component={RegistroPantalla} />
-
+      {/* PANTALLAS OPERARIO */}
       <Stack.Screen name="Inicio" component={InicioPantalla} />
       <Stack.Screen name="RegistroConsumo" component={RegistroConsumoPantalla} />
       <Stack.Screen name="Inventario" component={InventarioPantalla} />
       <Stack.Screen name="Alertas" component={AlertasPantalla} />
 
+      {/* PANTALLAS ADMIN */}
       <Stack.Screen name="Admin" component={AdminPantalla} />
       <Stack.Screen name="InventarioAdmin" component={InventarioAdmin} />
       <Stack.Screen name="GestionProveedores" component={GestionProveedores} />
