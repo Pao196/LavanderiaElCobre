@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native'; 
 
 export default StyleSheet.create({
-
   safeArea: {
     flex: 1,
     backgroundColor: '#fffaf4',   
@@ -9,19 +8,19 @@ export default StyleSheet.create({
 
   container: {
     flex: 1,
-    padding: 20,                 
+    padding: 20,                  
   },
 
   titulo: {
-    fontSize: 24,               
+    fontSize: 24,                 
     fontWeight: 'bold',
     marginBottom: 15,
-    color: '#e85d2e',           
+    color: '#e85d2e',
   },
 
 
   alertaBox: {
-    backgroundColor: '#fdecdc',  
+    backgroundColor: '#fdecdc',   
     padding: 15,
     borderRadius: 12,
     marginBottom: 25,
@@ -29,29 +28,29 @@ export default StyleSheet.create({
 
 
   alertaCard: {
-    backgroundColor: '#fff4e8',     
+    backgroundColor: '#fff4e8',
     padding: 14,
     borderRadius: 10,
     marginBottom: 10,
     borderLeftWidth: 6,
-    borderLeftColor: '#f4b183',
+    borderLeftColor: '#f4b183',   
   },
 
   alertaTitulo: {
-    fontSize: 20,                  
+    fontSize: 20,                 
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 10,
   },
 
   alertaDetalle: {
-    fontSize: 16,                  
+    fontSize: 16,
     marginBottom: 3,
     color: '#333',
   },
 
   alertaDetalleMin: {
-    fontSize: 14,                 
+    fontSize: 14,
     color: '#666',
     marginTop: 4,
   },
@@ -63,7 +62,7 @@ export default StyleSheet.create({
   },
 
   botonVolver: {
-    backgroundColor: '#6c757d',
+    backgroundColor: '#6c757d', 
     padding: 15,
     marginTop: 20,
     borderRadius: 10,
