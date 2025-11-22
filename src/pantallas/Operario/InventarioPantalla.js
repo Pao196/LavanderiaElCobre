@@ -50,7 +50,6 @@ export default function InventarioPantalla({ navigation }) {
     return '#ff4d4d';
   };
 
-
   if (cargando) {
     return (
       <View style={styles.cargando}>
@@ -62,7 +61,10 @@ export default function InventarioPantalla({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+
+      {/* CONTENEDOR PRINCIPAL */}
       <View style={styles.container}>
+
         <Text style={styles.titulo}>Inventario de Insumos</Text>
 
         <TextInput
@@ -76,12 +78,14 @@ export default function InventarioPantalla({ navigation }) {
         <FlatList
           data={filtrarInsumos()}
           keyExtractor={item => item.id}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <View style={styles.insumoBox}>
               <Text style={styles.insumoTitulo}>{item.nombre}</Text>
 
               {item.unidades.map((u, index) => {
-                const color = obtenerColorStock(u.stock, u.minimo);
+                const color = obtenerColorStock(u.stock);
 
                 return (
                   <View key={index} style={styles.cardUnidad}>
@@ -93,7 +97,10 @@ export default function InventarioPantalla({ navigation }) {
                     </Text>
 
                     <Text style={styles.detalle}>
-                      Unidad: <Text style={{ fontWeight: 'bold' }}>{u.unidad}</Text>
+                      Unidad:{' '}
+                      <Text style={{ fontWeight: 'bold' }}>
+                        {u.unidad}
+                      </Text>
                     </Text>
 
                     <Text style={styles.detalleMin}>
@@ -108,15 +115,16 @@ export default function InventarioPantalla({ navigation }) {
             <Text style={styles.vacio}>No hay insumos registrados.</Text>
           }
         />
-
-        <TouchableOpacity
-          style={styles.botonVolver}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.textoBotonVolver}>Volver</Text>
-        </TouchableOpacity>
-
       </View>
+
+      {/* BOTÓN FUERA DEL CONTENEDOR PARA NO BLOQUEAR EL SCROLL */}
+      <TouchableOpacity
+        style={styles.botonVolver}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.textoBotonVolver}>Volver</Text>
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 }

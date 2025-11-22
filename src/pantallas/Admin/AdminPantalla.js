@@ -49,7 +49,7 @@ export default function AdminPantalla({ navigation }) {
         setUsuarioDatos(datos);
 
 
-        if (String(datos.rol).toLowerCase() === 'admin') {
+        if (String(datos.rol).toLowerCase() === 'administrador') {
           setEsAdmin(true);
         } else {
           Alert.alert('Acceso restringido', 'No tienes permisos de administrador.');
