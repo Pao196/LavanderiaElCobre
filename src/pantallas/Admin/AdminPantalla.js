@@ -36,7 +36,7 @@ export default function AdminPantalla({ navigation }) {
         }
 
 
-        const ref = doc(db, 'usuarios_gestion_7', usuario.uid);
+        const ref = doc(db, 'usuarios', usuario.uid);
         const snap = await getDoc(ref);
 
         if (!snap.exists()) {

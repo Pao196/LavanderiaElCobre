@@ -36,7 +36,7 @@ export default function InicioSesionPantalla({ navigation }) {
       const uid = credenciales.user.uid;
 
 
-      const refUsuario = doc(db, 'usuarios_gestion_7', uid);
+      const refUsuario = doc(db, 'usuarios', uid);
       const snap = await getDoc(refUsuario);
 
       if (!snap.exists()) {

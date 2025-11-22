@@ -43,7 +43,7 @@ export default function RegistroPantalla({ navigation }) {
       const uid = credencial.user.uid;
 
 
-      await setDoc(doc(firestore, 'usuarios_gestion_7', uid), {
+      await setDoc(doc(firestore, 'usuarios', uid), {
         nombre: nombre.trim(),
         correo: correo.toLowerCase(),
         creadoEn: serverTimestamp(),

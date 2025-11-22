@@ -28,7 +28,7 @@ export default function InicioPantalla({ navigation }) {
 
     const obtenerDatos = async () => {
       try {
-        const ref = doc(db, 'usuarios_gestion_7', user.uid);
+        const ref = doc(db, 'usuarios', user.uid);
         const snap = await getDoc(ref);
 
         if (snap.exists()) {
