@@ -166,4 +166,29 @@ export const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '800',
   },
+  mensajeBox: {
+  padding: 12,
+  borderRadius: 10,
+  marginBottom: 15,
+},
+
+mensajeTexto: {
+  color: '#fff',
+  fontSize: 15,
+  fontWeight: '600',
+  textAlign: 'center',
+},
+
+mensajeExito: {
+  backgroundColor: '#4caf50',
+},
+
+mensajeError: {
+  backgroundColor: '#ff4d4d',
+},
+
+mensajeWarning: {
+  backgroundColor: '#ffb84d',
+},
+
 });

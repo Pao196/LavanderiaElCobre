@@ -14,7 +14,6 @@ import { styles } from '../../estilos/agregarPedidos.style';
 import { db } from '../../servicios/firebase';
 import { collection, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 
-
 export default function AgregarPedidos() {
 
   const [proveedorId, setProveedorId] = useState('');
@@ -31,6 +30,19 @@ export default function AgregarPedidos() {
 
   const [cantidad, setCantidad] = useState('');
   const [insumosAgregados, setInsumosAgregados] = useState([]);
+
+  const [mensaje, setMensaje] = useState('');
+  const [tipoMensaje, setTipoMensaje] = useState('success');
+
+
+  const mostrarMensaje = (texto, tipo = 'success') => {
+    setMensaje(texto);
+    setTipoMensaje(tipo);
+
+    setTimeout(() => {
+      setMensaje('');
+    }, 3000);
+  };
 
   useEffect(() => {
     const cargarProveedores = async () => {
@@ -64,7 +76,7 @@ export default function AgregarPedidos() {
 
   const agregarInsumo = () => {
     if (!insumoSeleccionado || !unidadSeleccionada || !cantidad) {
-      Alert.alert('Error', 'Completa insumo, unidad y cantidad.');
+      mostrarMensaje('Completa insumo, unidad y cantidad.', 'error');
       return;
     }
 
@@ -79,11 +91,13 @@ export default function AgregarPedidos() {
     setInsumoSeleccionado(null);
     setUnidadSeleccionada('');
     setCantidad('');
+
+    mostrarMensaje('Insumo agregado correctamente', 'success');
   };
 
   const registrarPedido = async () => {
     if (!proveedorId || insumosAgregados.length === 0) {
-      Alert.alert('Error', 'Selecciona proveedor y agrega insumos.');
+      mostrarMensaje('Selecciona proveedor y agrega insumos.', 'error');
       return;
     }
 
@@ -97,14 +111,12 @@ export default function AgregarPedidos() {
         insumos: insumosAgregados
       });
 
-
       await addDoc(collection(db, `proveedores_gestion_7/${proveedorId}/pedidos`), {
         pedidoId: pedidoRef.id,
         fecha: new Date(),
         estado: 'aprobado',
         insumos: insumosAgregados
       });
-
 
       const inventarioSnap = await getDocs(collection(db, 'inventario_gestion_7'));
 
@@ -128,7 +140,6 @@ export default function AgregarPedidos() {
           continue;
         }
 
-
         let unidades = docEncontrado.unidades || [];
         let idx = unidades.findIndex(u => u.unidad === item.unidad);
 
@@ -146,16 +157,15 @@ export default function AgregarPedidos() {
         });
       }
 
-      Alert.alert('Éxito', 'Pedido registrado y stock actualizado.');
-
+      mostrarMensaje('Pedido registrado y stock actualizado', 'success');
 
       setProveedorId('');
       setProveedorNombre('');
       setInsumosAgregados([]);
 
     } catch (error) {
-      Alert.alert('Error', 'No se pudo registrar el pedido.');
       console.error(error);
+      mostrarMensaje('No se pudo registrar el pedido.', 'error');
     }
   };
 
@@ -163,10 +173,24 @@ export default function AgregarPedidos() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Agregar Pedido</Text>
 
+
+      {mensaje !== '' && (
+        <View style={[
+          styles.mensajeBox,
+          tipoMensaje === 'success' ? styles.mensajeExito :
+          tipoMensaje === 'error' ? styles.mensajeError :
+          styles.mensajeWarning
+        ]}>
+          <Text style={styles.mensajeTexto}>{mensaje}</Text>
+        </View>
+      )}
+
+
       <Text style={styles.label}>Proveedor *</Text>
       <TouchableOpacity style={styles.input} onPress={() => setModalProv(true)}>
         <Text>{proveedorNombre || 'Selecciona un proveedor'}</Text>
       </TouchableOpacity>
+
 
       <Modal visible={modalProv} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -190,7 +214,10 @@ export default function AgregarPedidos() {
               )}
             />
 
-            <TouchableOpacity style={styles.modalCerrar} onPress={() => setModalProv(false)}>
+            <TouchableOpacity
+              style={styles.modalCerrar}
+              onPress={() => setModalProv(false)}
+            >
               <Text style={styles.modalCerrarTexto}>Cerrar</Text>
             </TouchableOpacity>
           </View>
@@ -227,19 +254,23 @@ export default function AgregarPedidos() {
               )}
             />
 
-            <TouchableOpacity style={styles.modalCerrar} onPress={() => setModalInsumo(false)}>
+            <TouchableOpacity
+              style={styles.modalCerrar}
+              onPress={() => setModalInsumo(false)}
+            >
               <Text style={styles.modalCerrarTexto}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
+
       <Text style={styles.label}>Unidad *</Text>
       <TouchableOpacity
         style={styles.input}
         onPress={() => {
           if (!insumoSeleccionado) {
-            Alert.alert('Selecciona un insumo primero');
+            mostrarMensaje('Selecciona un insumo primero', 'warning');
             return;
           }
           setModalUnidad(true);
@@ -270,12 +301,16 @@ export default function AgregarPedidos() {
               )}
             />
 
-            <TouchableOpacity style={styles.modalCerrar} onPress={() => setModalUnidad(false)}>
+            <TouchableOpacity
+              style={styles.modalCerrar}
+              onPress={() => setModalUnidad(false)}
+            >
               <Text style={styles.modalCerrarTexto}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
 
       <Text style={styles.label}>Cantidad *</Text>
       <TextInput
@@ -303,6 +338,7 @@ export default function AgregarPedidos() {
       <TouchableOpacity style={styles.boton} onPress={registrarPedido}>
         <Text style={styles.textoBoton}>Guardar Pedido</Text>
       </TouchableOpacity>
+
     </ScrollView>
   );
 }
