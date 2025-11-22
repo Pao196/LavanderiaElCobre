@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,48 +9,38 @@ import {
   View,
 } from 'react-native';
 
-// Se mantiene auth por si quieres usarlo en el futuro, pero no bloquea la entrada
-import { auth } from '../../servicios/firebase';
-
 import { styles } from '../../estilos/adminPantalla.style';
 import AdminCard from '../../componentes/Admincard.js';
 
-export default function AdminPantalla({ navigation }) {
+// Añadimos 'route' a las props para recibir los parámetros
+export default function AdminPantalla({ navigation, route }) {
 
-  // Configuración forzada para entrar directo como Admin
-  const [cargando, setCargando] = useState(false);
-  const [esAdmin, setEsAdmin] = useState(true);
-  const [usuarioDatos, setUsuarioDatos] = useState({
-    nombre: 'Administrador Local',
-    correo: 'admin@sistema.local'
+  // Intentamos obtener el usuario que viene desde App.js -> NavegacionApp
+  const usuarioParam = route.params?.usuario;
+
+  // Inicializamos el estado con los datos reales, o un fallback si algo fallara
+  const [usuarioDatos, setUsuarioDatos] = useState(usuarioParam || {
+    nombre: 'Cargando...',
+    correo: '...'
   });
 
-  // El useEffect de seguridad se ha eliminado para permitir acceso libre.
-
+  // Ya no necesitamos cargar nada, porque los datos ya vienen listos desde App.js
+  // Pero mantenemos el estado 'cargando' false para que renderice directo.
+  
   const cerrarSesion = async () => {
-    // Como no hay pantalla de login, solo mostramos una alerta
-    Alert.alert('Sesión', 'Estás en modo sin autenticación. No hay pantalla de login a la cual volver.');
+    Alert.alert('Sesión', 'Cierre de sesión gestionado por la Intranet.');
+    // Aquí podrías redirigir a la web externa si quisieras
   };
-
-  if (cargando) {
-    return (
-      <View style={styles.cargando}>
-        <ActivityIndicator size="large" color="#ff6b35" />
-        <Text style={styles.textoCargando}>Cargando panel...</Text>
-      </View>
-    );
-  }
-
-  if (!esAdmin) return null;
 
   return (
     <SafeAreaView style={styles.fondo}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.titulo}>Panel de Administración</Text>
 
+        {/* AQUÍ SE MUESTRAN LOS DATOS REALES */}
         <View style={styles.tarjetaUsuario}>
-          <Text style={styles.nombre}>{usuarioDatos?.nombre}</Text>
-          <Text style={styles.correo}>{usuarioDatos?.correo}</Text>
+          <Text style={styles.nombre}>{usuarioDatos?.nombre || 'Sin Nombre'}</Text>
+          <Text style={styles.correo}>{usuarioDatos?.correo || 'Sin Correo'}</Text>
         </View>
 
         <View style={styles.menu}>

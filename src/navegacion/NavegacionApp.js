@@ -1,12 +1,10 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// PANTALLAS OPERARIO
 import AlertasPantalla from '../pantallas/Operario/AlertasPantalla';
 import InicioPantalla from '../pantallas/Operario/InicioPantalla';
 import InventarioPantalla from '../pantallas/Operario/InventarioPantalla';
 import RegistroConsumoPantalla from '../pantallas/Operario/RegistroConsumoPantalla';
 
-// PANTALLAS ADMIN
 import AdminPantalla from '../pantallas/Admin/AdminPantalla';
 import AgregarPedidos from '../pantallas/Admin/AgregarPedidos';
 import AgregarProveedor from '../pantallas/Admin/AgregarProveedor';
@@ -22,21 +20,29 @@ import { headerOptions } from '../estilos/navegacion.style';
 
 const Stack = createNativeStackNavigator();
 
-// Aceptamos "rutaInicial" como prop
-export default function NavegacionApp({ rutaInicial }) {
+// Recibimos datosUsuario aquí también
+export default function NavegacionApp({ rutaInicial, datosUsuario }) {
   return (
     <Stack.Navigator
-      initialRouteName={rutaInicial || "Inicio"} // Usamos la prop o "Inicio" por defecto
+      initialRouteName={rutaInicial || "Inicio"}
       screenOptions={headerOptions}
     >
-      {/* PANTALLAS OPERARIO */}
-      <Stack.Screen name="Inicio" component={InicioPantalla} />
+      {/* PANTALLAS OPERARIO - Le pasamos los datos reales */}
+      <Stack.Screen 
+        name="Inicio" 
+        component={InicioPantalla} 
+        initialParams={{ usuario: datosUsuario }} 
+      />
       <Stack.Screen name="RegistroConsumo" component={RegistroConsumoPantalla} />
       <Stack.Screen name="Inventario" component={InventarioPantalla} />
       <Stack.Screen name="Alertas" component={AlertasPantalla} />
 
-      {/* PANTALLAS ADMIN */}
-      <Stack.Screen name="Admin" component={AdminPantalla} />
+      {/* PANTALLAS ADMIN - Le pasamos los datos reales */}
+      <Stack.Screen 
+        name="Admin" 
+        component={AdminPantalla} 
+        initialParams={{ usuario: datosUsuario }} 
+      />
       <Stack.Screen name="InventarioAdmin" component={InventarioAdmin} />
       <Stack.Screen name="GestionProveedores" component={GestionProveedores} />
       <Stack.Screen name="ReportesInsumos" component={ReportesInsumos} />
