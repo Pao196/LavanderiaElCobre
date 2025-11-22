@@ -47,14 +47,16 @@ const COLLECTIONS = {
     inventario: 'inventario_gestion_7',
 };
 
-const MAIN_INTRANET_URL = "https://lavanderia-cobre-landingpage.vercel.app/intranet/dashboard";
+// URL de la Intranet para redirección al cerrar sesión
+const INTRANET_URL = "https://lavanderia-el-cobre.vercel.app/"; 
+const DASHBOARD_REDIRECT_URL = "https://lavanderia-cobre-landingpage.vercel.app/intranet/dashboard";
 
 // --- 2. CONTEXTO DE AUTENTICACIÓN ---
 const AuthContext = createContext(undefined);
 
 function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true); // Carga inicial de Firebase
+    const [loading, setLoading] = useState(true);
 
     const fetchAndSetUser = async (uid, email, displayName) => {
         if (!uid) return false;
@@ -64,7 +66,6 @@ function AuthProvider({ children }) {
             
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                // Actualizar último acceso en segundo plano
                 updateDoc(userDocRef, { ultimo_acceso: Timestamp.now() }).catch(() => {});
 
                 const rol = (userData.rol || userData.role || 'operario').toLowerCase();
@@ -89,23 +90,20 @@ function AuthProvider({ children }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                // Si Firebase ya tiene usuario, validamos roles
                 if (!user || user.uid !== firebaseUser.uid) {
                     await fetchAndSetUser(firebaseUser.uid, firebaseUser.email || '', firebaseUser.displayName || '');
                 }
             } else {
                 setUser(null);
             }
-            setLoading(false); // Terminó la carga inicial de Auth
+            setLoading(false);
         });
         return unsubscribe;
     }, []);
 
     const loginWithToken = async (token) => {
       if (!token) return false;
-      // No ponemos setLoading(true) global aquí para no bloquear UI si ya había usuario
       try {
-          // Simulación: Login con UID directo
           const success = await fetchAndSetUser(token, 'usuario@intranet.cl', 'Usuario Intranet');
           return success;
       } catch (error) {
@@ -116,8 +114,9 @@ function AuthProvider({ children }) {
     const signOut = async () => {
         await firebaseSignOut(auth);
         setUser(null);
+        // Redirección a la Intranet principal al cerrar sesión
         if (Platform.OS === 'web') {
-            window.location.href = MAIN_INTRANET_URL;
+            window.location.href = INTRANET_URL;
         }
     };
     
@@ -128,7 +127,16 @@ function AuthProvider({ children }) {
 
 const useAuth = () => useContext(AuthContext);
 
-// --- 3. PANTALLAS ---
+// --- 3. COMPONENTES DE PANTALLA ---
+
+const LoadingScreen = () => (
+    <View style={styles.loadingContainer}>
+        <View style={styles.spinnerContainer}>
+            <ActivityIndicator size="large" color="#e85d2e" />
+        </View>
+        <Text style={styles.loadingText}>Validando credenciales...</Text>
+    </View>
+);
 
 const DashboardScreen = ({ navigation }) => {
     const { user, signOut } = useAuth();
@@ -184,13 +192,12 @@ const InventarioScreen = () => {
     );
 };
 
-// --- 4. LÓGICA DE NAVEGACIÓN ---
+// --- 4. NAVEGACIÓN ---
 
 const Stack = createNativeStackNavigator();
 
 function Navigation() {
     const { user, loading, loginWithToken } = useAuth();
-    // Estado local para controlar si estamos verificando la URL
     const [isCheckingUrl, setIsCheckingUrl] = useState(true);
 
     useEffect(() => {
@@ -203,28 +210,25 @@ function Navigation() {
                         const token = queryParams?.auth_token;
 
                         if (token) {
-                            // Si hay token, intentamos loguear. 
-                            // Mientras tanto mostramos carga solo si no hay usuario previo.
                             const success = await loginWithToken(token);
                             if (!success) {
-                                window.location.href = MAIN_INTRANET_URL;
+                                window.location.href = DASHBOARD_REDIRECT_URL;
                                 return;
                             }
                         } else if (!user && !loading) {
-                            // Sin token y sin usuario -> Redirigir
-                            window.location.href = MAIN_INTRANET_URL;
+                            window.location.href = DASHBOARD_REDIRECT_URL;
                             return;
                         }
                     } else if (!user && !loading) {
-                         window.location.href = MAIN_INTRANET_URL;
+                         window.location.href = DASHBOARD_REDIRECT_URL;
                          return;
                     }
                 } catch (e) {
                     console.error("Error URL", e);
-                    if (!user) window.location.href = MAIN_INTRANET_URL;
+                    if (!user) window.location.href = DASHBOARD_REDIRECT_URL;
                 }
             }
-            setIsCheckingUrl(false); // Terminamos de chequear URL
+            setIsCheckingUrl(false);
         };
 
         if (!loading) {
@@ -232,19 +236,15 @@ function Navigation() {
         }
     }, [loading, user]);
 
-    // PANTALLA DE CARGA (Solo se muestra si estamos cargando Auth o Chequeando URL)
-    // Si ya hay usuario, esto se salta rápido o no se muestra si el chequeo es veloz.
     if (loading || isCheckingUrl) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#e85d2e" />
-                {/* Opcional: Texto pequeño si demora mucho */}
-                {/* <Text style={styles.loadingText}>Cargando...</Text> */}
             </View>
         );
     }
 
-    if (!user) return null; // Se redirigirá en breve
+    if (!user) return null; 
 
     return (
         <Stack.Navigator screenOptions={{ 
@@ -268,13 +268,12 @@ export default function App() {
     );
 }
 
-// --- ESTILOS ---
 const styles = StyleSheet.create({
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#fff', // Fondo blanco limpio
+        backgroundColor: '#fff',
     },
     container: {
         padding: 20,
