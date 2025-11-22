@@ -1,77 +1,73 @@
 import { StyleSheet } from 'react-native'; 
 
 export default StyleSheet.create({
+
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff5ee',
+    backgroundColor: '#fffaf4',   
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#fff5ee',
-    padding: 20,
+    padding: 20,                 
   },
 
   titulo: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#e85d2e',
-    marginBottom: 25,
-    letterSpacing: 0.3,
+    fontSize: 24,               
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#e85d2e',           
   },
 
 
   alertaBox: {
-    backgroundColor: '#fdecdc',    
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 28,
+    backgroundColor: '#fdecdc',  
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 25,
   },
 
 
   alertaCard: {
     backgroundColor: '#fff4e8',     
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 10,
     borderLeftWidth: 6,
-    borderLeftColor: '#f4b183',     
+    borderLeftColor: '#f4b183',
   },
 
   alertaTitulo: {
-    fontSize: 20,
+    fontSize: 20,                  
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 12,
+    marginBottom: 10,
   },
 
   alertaDetalle: {
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 16,                  
+    marginBottom: 3,
     color: '#333',
   },
 
   alertaDetalleMin: {
-    fontSize: 14,
+    fontSize: 14,                 
     color: '#666',
-    marginTop: 2,
+    marginTop: 4,
   },
 
   vacio: {
     textAlign: 'center',
     color: '#777',
-    marginTop: 25,
-    fontSize: 15,
-    fontStyle: 'italic',
+    marginTop: 30,
   },
 
   botonVolver: {
     backgroundColor: '#6c757d',
     padding: 15,
+    marginTop: 20,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 15,
-    marginBottom: 25,
   },
 
   textoBotonVolver: {
@@ -84,7 +80,7 @@ export default StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff5ee',
+    backgroundColor: '#fffaf4',
   },
 
   textoCargando: {
