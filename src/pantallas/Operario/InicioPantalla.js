@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { styles } from '../../estilos/inicioPantalla.style';
-
 
 import { auth, db } from '../../servicios/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -47,20 +46,6 @@ export default function InicioPantalla({ navigation }) {
 
     obtenerDatos();
   }, []);
-
-  const cerrarSesion = async () => {
-    try {
-      await auth.signOut();
-      Alert.alert('Sesión cerrada', 'Has cerrado sesión correctamente.');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'InicioSesion' }],
-      });
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      Alert.alert('Error', 'No se pudo cerrar sesión. Intenta nuevamente.');
-    }
-  };
 
   if (cargando) {
     return (
@@ -106,10 +91,6 @@ export default function InicioPantalla({ navigation }) {
             <Text style={styles.textoCard}>Ver Alertas</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.botonSalir} onPress={cerrarSesion}>
-          <Text style={styles.textoBotonSalir}>Cerrar Sesión</Text>
-        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>

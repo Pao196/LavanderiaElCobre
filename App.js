@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, Platform } from 'react-native';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
@@ -8,17 +8,23 @@ import NavegacionApp from './src/navegacion/NavegacionApp';
 import { db } from './src/servicios/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-const DASHBOARD_REDIRECT_URL = "https://lavanderia-cobre-landingpage.vercel.app/intranet/dashboard";
+// Usuario por defecto para acceso libre (Invitado)
+const GUEST_USER = {
+  nombre: "Usuario Invitado",
+  email: "invitado@elcobre.cl",
+  rol: "administrador", // Rol alto para que puedas probar todas las pantallas
+  uid: "guest-mobile-id"
+};
 
 export default function App() {
   const [loading, setLoading] = useState(true);
-  const [rutaInicial, setRutaInicial] = useState(null);
-  const [datosUsuario, setDatosUsuario] = useState(null); // <--- NUEVO ESTADO
-  const [errorMsg, setErrorMsg] = useState('');
+  const [rutaInicial, setRutaInicial] = useState('Inicio'); 
+  const [datosUsuario, setDatosUsuario] = useState(null);
 
   useEffect(() => {
-    const validarSesion = async () => {
+    const iniciarApp = async () => {
       try {
+        // 1. Intentar obtener token de la URL (Deep Linking)
         let url = await Linking.getInitialURL();
         let token = null;
 
@@ -27,74 +33,63 @@ export default function App() {
           token = queryParams?.auth_token;
         }
 
-        // Para pruebas locales (descomentar si es necesario):
-        // if (!token) token = "AQUI_TU_UID_REAL_DE_FIREBASE"; 
+        // 2. Si hay token, intentamos validar con Firebase real
+        if (token) {
+          try {
+            const userRef = doc(db, 'usuarios', token);
+            const userSnap = await getDoc(userRef);
 
-        if (!token) {
-          manejarFallo("No se detectó token de sesión.");
-          return;
-        }
+            if (userSnap.exists()) {
+              const data = userSnap.data();
+              setDatosUsuario(data);
 
-        const userRef = doc(db, 'usuarios', token);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          // Guardamos los datos reales para pasarlos a las pantallas
-          setDatosUsuario(data); 
-
-          const rol = (data.rol || 'operario').toLowerCase();
-
-          if (rol === 'administrador' || rol === 'admin') {
-            setRutaInicial('Admin');
-          } else {
-            setRutaInicial('Inicio');
+              const rol = (data.rol || 'operario').toLowerCase();
+              // Definir ruta según rol real
+              if (rol === 'administrador' || rol === 'admin') {
+                setRutaInicial('Admin');
+              } else {
+                setRutaInicial('Inicio');
+              }
+              
+              setLoading(false);
+              return; // Éxito, terminamos aquí
+            }
+          } catch (firebaseError) {
+            console.log("Error validando token, pasando a modo invitado...");
           }
-          setLoading(false);
-        } else {
-          manejarFallo("Usuario no encontrado en la base de datos.");
         }
+
+        // 3. FALLBACK: Si no hay token o falló la validación -> MODO INVITADO
+        // Esto asegura que la app SIEMPRE abra
+        console.log("Iniciando como Invitado");
+        setDatosUsuario(GUEST_USER);
+        setRutaInicial('Admin'); // Por defecto al modo más completo
+        setLoading(false);
 
       } catch (e) {
         console.error(e);
-        manejarFallo("Error de conexión.");
+        // En caso de error catastrófico, también entramos como invitado
+        setDatosUsuario(GUEST_USER);
+        setRutaInicial('Admin');
+        setLoading(false);
       }
     };
 
-    validarSesion();
+    iniciarApp();
   }, []);
 
-  const manejarFallo = (mensaje) => {
-    if (Platform.OS === 'web') {
-      window.location.href = DASHBOARD_REDIRECT_URL;
-    } else {
-      setErrorMsg(mensaje);
-      setLoading(false);
-    }
-  };
-
+  // Pantalla blanca limpia mientras carga (es muy rápido)
+  // Quitamos el ActivityIndicator y el texto para que se sienta nativo
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
-        <ActivityIndicator size="large" color="#e85d2e" />
-        <Text style={{ marginTop: 10, color: '#e85d2e' }}>Validando credenciales...</Text>
-      </View>
-    );
-  }
-
-  if (errorMsg) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ fontSize: 18, color: 'red', textAlign: 'center', marginBottom: 20 }}>{errorMsg}</Text>
-        <Text style={{ color: '#555' }}>Por favor ingresa desde la Intranet.</Text>
-      </View>
+      <View style={{ flex: 1, backgroundColor: '#ffffff' }} />
     );
   }
 
   return (
     <NavigationContainer>
       <StatusBar style="light" backgroundColor="#e85d2e" />
-      {/* Pasamos ruta Y datos del usuario a la navegación */}
+      {/* Pasamos los datos a la navegación */}
       <NavegacionApp rutaInicial={rutaInicial} datosUsuario={datosUsuario} />
     </NavigationContainer>
   );
